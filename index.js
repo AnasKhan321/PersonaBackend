@@ -15,7 +15,7 @@ app.use(express.json())
 const redisclient1 = new Redis(process.env.REDIS_URL )
 const redisclient2 = new Redis(process.env.REDIS_URL)
 const server = http.createServer(app)
-
+const PORT = process.env.PORT ?? 8000
 
 
 const io = new Server(server , {
@@ -91,4 +91,33 @@ app.get("/userinfo/:name"  , async(req,res)=>{
     }
 })
 
-server.listen(8000 , ()=>{console.log("Server is listening ")})
+
+app.post("/message"  , async(req,res)=>{
+
+
+    try {
+        const {username , message}  = req.body ; 
+        const rrdata  = await redisclient2.get(username)
+        const ssdata = JSON.parse(rrdata)
+        console.log(username)
+        const sprompt = `Hy my name is ${ssdata.name}  my twitter description is this ${ssdata.description} and here is my recent Tweets list : 
+            TWEETS :
+                ${ssdata.data}
+
+            You have to clone my personality based on my tweets remember you are not ai you are ${ssdata.name}  and Just give the content 
+            Just give the content don't talk about your character that how you feels just give the tweet if I asked for it . 
+        `
+
+        const rdata = await aidata(sprompt , message)
+
+        res.status(200).json({success : true  , tweet :  rdata[0].text  })
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({success : false})
+    }
+})
+
+
+
+server.listen(PORT , ()=>{console.log(`Server is listening on PORT : ${PORT}`)})
