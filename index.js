@@ -4,8 +4,9 @@ import http from "http"
 import {Server}  from "socket.io"
 import Redis from 'ioredis'
 import  { generateSlug } from 'random-word-slugs'
-import {RunewContainer  , aidata} from "./utils/index.js"
+import {RunewContainer  , aidata  , ReplyAi} from "./utils/index.js"
 import dotenv from "dotenv"
+import { channel } from 'diagnostics_channel'
 dotenv.config()
 const app = express()
 
@@ -130,6 +131,83 @@ app.post("/message"  , async(req,res)=>{
     }
 })
 
+
+app.post("/createprofile"  , async(req,res)=>{
+    try {
+        const {username} = req.body ; 
+        let rdata =  await redisclient2.get(username)
+        if(rdata !== null){
+            return res.json({success : true ,message : "user already exsists"})
+        }
+        let q = await redisclient2.get("QueueUser")
+        let queue = JSON.parse(q)
+
+        queue.push(username)
+        await redisclient2.set("QueueUser"  , JSON.stringify(queue))
+        await redisclient1.subscribe(username)
+        await RunewContainer(username , username)
+
+        res.json({success : true})
+    } catch (error) {
+        res.status(500).json({success : false})
+    }
+})
+
+app.post("/reply"  , async(req,res)=>{
+    try {
+        const {user , tweetowner , tweet }  = req.body ; 
+
+        const userdata  = await redisclient2.get(user)
+        const ownerdata = await redisclient2.get(tweetowner)
+        
+        let userdata2 = JSON.parse(userdata)
+
+        let ownerdata2 = JSON.parse(ownerdata)
+
+        const prompt = ` You are ${userdata2.name}  Your XUSERNAME : ${userdata2.username}  Your XDESCRIPTION : ${userdata2.description} 
+            YOUR TWEETS : ${userdata2.data}
+            You have to clone this Person Personality You are ${userdata2.name }  
+            Adapt the Personality of this Person through tweets description 
+            You are ${userdata2.name}`
+
+        console.log(prompt)
+
+        const rdata = await ReplyAi(prompt , `
+                ${ownerdata2.name}  write a new tweet ${tweet}   I have to give him a reply Write a reply For me ? 
+
+                Just give me the reply ? Nothing else ! 
+            `)
+
+
+
+        res.json({success : true , reply :  rdata[0].text   })
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({success : false})
+    }
+})
+
+
+
+redisclient1.on("message"  , async(channel , message)=>{
+    let q = await redisclient2.get("QueueUser")
+    let queuee = JSON.parse(q)
+    console.log(queuee)
+
+    if(queuee.includes(channel)){
+        const data=  JSON.parse(message)
+  
+        if(data.success){
+            await redisclient2.set(data.username  , message)
+        }
+
+        queuee = queuee.filter(item=> item !== data.username)
+        await redisclient2.set("QueueUser"  , JSON.stringify(queuee))
+
+
+    }
+})
 
 
 server.listen(PORT , ()=>{console.log(`Server is listening on PORT : ${PORT}`)})

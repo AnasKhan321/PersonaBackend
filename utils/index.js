@@ -81,5 +81,28 @@ export async function  aidata(systemprompt  , question) {
 }
 
 
+export async function  ReplyAi(systemprompt , question) {
+    const msg = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 1000,
+        temperature: 1,
+        system: systemprompt , 
+        messages: [
+            {
+            "role": "user",
+            "content": [
+                {
+                "type": "text",
+                "text": question
+                }  , 
+            ]
+            }  , 
+           
+        ]
+        });
+        console.log(msg.content);
+        return msg.content
+}
+
 
 
