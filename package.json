@@ -10,10 +10,12 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.1",
     "@aws-sdk/client-ecs": "^3.716.0",
+    "@aws-sdk/client-sqs": "^3.721.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "ioredis": "^5.4.2",
+    "node-cron": "^3.0.3",
     "random-word-slugs": "^0.1.7",
     "socket.io": "^4.8.1"
   },

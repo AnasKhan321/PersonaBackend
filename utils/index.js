@@ -1,6 +1,8 @@
 import  { ECSClient, RunTaskCommand } from '@aws-sdk/client-ecs'
 import dotenv from "dotenv"
 import Anthropic from "@anthropic-ai/sdk";
+import {redisclient1 , redisclient2}  from "../index.js"
+import { json } from 'express';
 dotenv.config() ; 
 
 const anthropic = new Anthropic();
@@ -19,6 +21,17 @@ const config = {
     TASK: process.env.AWS_TASK  
 }
 
+
+const hastoupdateProfile = [
+    "brockpierce"  , 
+    "Cristiano"  , 
+    "elonmusk"  , 
+    "FacesearchAI"  , 
+    "imVkohli" , 
+    "jackjayio"  , 
+    "morgan_freeman"  , 
+    "taylorswift13"
+]
 
 
 
@@ -106,3 +119,31 @@ export async function  ReplyAi(systemprompt , question) {
 
 
 
+export async function  updateProfile(username ) {
+    let rdata =  await redisclient2.get(username)
+
+    if(rdata == null){
+        console.log("profile doesn't exsists")
+        return ; 
+    }
+
+    let  q = await redisclient2.get("UpdateUser")
+    let queue = JSON.parse(q)
+
+    queue.push(username)
+
+    await redisclient2.set("UpdateUser"  , JSON.stringify(queue))
+    await redisclient1.subscribe(username)
+    await RunewContainer(username , username)
+    console.log(`updating user : ${username}`)
+
+
+
+}
+
+
+export const updateAllProfile = async()=>{
+    for(const profile of hastoupdateProfile){
+            await updateProfile(profile)
+    }
+}

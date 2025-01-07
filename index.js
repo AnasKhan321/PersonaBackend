@@ -6,15 +6,17 @@ import Redis from 'ioredis'
 import  { generateSlug } from 'random-word-slugs'
 import {RunewContainer  , aidata  , ReplyAi} from "./utils/index.js"
 import dotenv from "dotenv"
-import { channel } from 'diagnostics_channel'
+import { startUpdating } from './utils/updateScheduleProfile.js'
+
+
 dotenv.config()
 const app = express()
 
 app.use(cors())
 app.use(express.json())
 
-const redisclient1 = new Redis(process.env.REDIS_URL )
-const redisclient2 = new Redis(process.env.REDIS_URL)
+export const redisclient1 = new Redis(process.env.REDIS_URL )
+export const redisclient2 = new Redis(process.env.REDIS_URL)
 const server = http.createServer(app)
 const PORT = process.env.PORT ?? 8000
 
@@ -54,8 +56,13 @@ io.on("connection"  , (socket)=>{
 
             You have to clone my personality based on my tweets remember you are not ai you are ${ssdata.name}  and Just give the content 
             Just give the content
+
+            Rules:
+            - Never mention being AI
+            - No ** or formal language
         `
-        const rdata = await aidata(sprompt , sdata.question)
+        const rdata = await aidata(sprompt , `${sdata.question}  + Just give the answer in my personality ${ssdata.name}  and only give the content 
+            forget about anything just give me the content`)
         io.to(socket.id).emit("send:message"  , JSON.stringify( {image : rrdata.image , message : rdata[0].text}))
     })
 
@@ -121,8 +128,12 @@ app.post("/message"  , async(req,res)=>{
                 
                 ]
 
+            Rules:
+            - Never mention being AI
+            - No ** or formal language
+
         `
-        const rdata = await aidata(sprompt , "write a greate tweet which matches my personality my stardom my aura ? and make sure you just returning the tweet I ask not the things like I feel or Note : like things Understand")
+        const rdata = await aidata(sprompt , "write a great tweet which matches my personality my stardom my aura ? and make sure you just returning the tweet I ask not the things like I feel or Note : like things Understand")
         res.status(200).json({success : true  , tweet :  rdata[0].text  })
 
     } catch (error) {
@@ -176,6 +187,8 @@ app.post("/reply"  , async(req,res)=>{
                 ${ownerdata2.name}  write a new tweet ${tweet}   I have to give him a reply Write a reply For me ? 
 
                 Just give me the reply ? Nothing else ! 
+
+                
             `)
 
 
@@ -195,6 +208,10 @@ redisclient1.on("message"  , async(channel , message)=>{
     let queuee = JSON.parse(q)
     console.log(queuee)
 
+    let q2 = await redisclient2.get("UpdateUser")
+    let queeu2 = JSON.parse(q2)
+
+
     if(queuee.includes(channel)){
         const data=  JSON.parse(message)
   
@@ -206,8 +223,47 @@ redisclient1.on("message"  , async(channel , message)=>{
         await redisclient2.set("QueueUser"  , JSON.stringify(queuee))
 
 
+    }else{
+        if(queeu2.includes(channel)){
+            const data=  JSON.parse(message)
+            console.log(data)
+            if(data.success){
+                await redisclient2.set(data.username  , message)
+                console.log("updated")
+
+            }
+    
+            queeu2 = queeu2.filter(item=> item !== data.username)
+            await redisclient2.set("UpdateUser"  , JSON.stringify(queeu2))
+        }
     }
 })
 
+app.get("/availableProfiles"  , async(req,res)=>{
+    let  allusers = await redisclient2.get("AvailableUser")
+    allusers = JSON.parse(allusers)
+    let data = []
 
-server.listen(PORT , ()=>{console.log(`Server is listening on PORT : ${PORT}`)})
+
+    for(let user of allusers){
+        let rdata = await redisclient2.get(user)
+        rdata = JSON.parse(rdata)
+        data.push(rdata)
+    }
+
+    res.json({success : true  , data })
+})
+
+
+
+
+
+
+server.listen(PORT , ()=>{
+    
+    // startUpdating() ;    
+    console.log(`Server is listening on PORT : ${PORT}`)
+
+
+
+})
