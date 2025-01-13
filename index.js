@@ -3,7 +3,6 @@ import cors from "cors"
 import http from "http"
 import {Server}  from "socket.io"
 import Redis from 'ioredis'
-import  { generateSlug } from 'random-word-slugs'
 import {RunewContainer  , aidata  , ReplyAi} from "./utils/index.js"
 import dotenv from "dotenv"
 import { startUpdating } from './utils/updateScheduleProfile.js'
@@ -48,10 +47,7 @@ io.on("connection"  , (socket)=>{
             const rdata = await res.json() ; 
             console.log(rdata.data.data)
             io.to(socket.id).emit("userfound"  , JSON.stringify(rdata.data.data))
-            // let slug = generateSlug() ; 
-            // await redisclient1.subscribe(slug)
-            // await redisclient2.set(socket.id , slug)
-            // await RunewContainer(slug ,username)
+
         }
 
 
@@ -92,22 +88,22 @@ io.on("connection"  , (socket)=>{
         io.to(socket.id).emit("send:message"  , JSON.stringify( {image : rrdata.image , message : completion.choices[0].message.content}))
     })
 
-    redisclient1.on("message"  , async(channel , message)=>{
-        const schannel =  await redisclient2.get(socket.id) 
-        if(schannel == channel){
-            const data=  JSON.parse(message)
-            console.log(JSON.parse(message))
-            console.log(data.success)
+    // redisclient1.on("message"  , async(channel , message)=>{
+    //     const schannel =  await redisclient2.get(socket.id) 
+    //     if(schannel == channel){
+    //         const data=  JSON.parse(message)
+    //         console.log(JSON.parse(message))
+    //         console.log(data.success)
 
-            if(data.success ){
-                await redisclient2.set(data.username  , message)
-                socket.emit("userfound"  , message)
+    //         if(data.success ){
+    //             await redisclient2.set(data.username  , message)
+    //             socket.emit("userfound"  , message)
                 
-            }else{
-                socket.emit("usernotfound"  , JSON.stringify({success : false}))
-            }
-        }
-    })
+    //         }else{
+    //             socket.emit("usernotfound"  , JSON.stringify({success : false}))
+    //         }
+    //     }
+    // })
 }) 
 
 
@@ -229,41 +225,41 @@ app.post("/reply"  , async(req,res)=>{
 
 
 
-redisclient1.on("message"  , async(channel , message)=>{
-    let q = await redisclient2.get("QueueUser")
-    let queuee = JSON.parse(q)
-    console.log(queuee)
+// redisclient1.on("message"  , async(channel , message)=>{
+//     let q = await redisclient2.get("QueueUser")
+//     let queuee = JSON.parse(q)
+//     console.log(queuee)
 
-    let q2 = await redisclient2.get("UpdateUser")
-    let queeu2 = JSON.parse(q2)
+//     let q2 = await redisclient2.get("UpdateUser")
+//     let queeu2 = JSON.parse(q2)
 
 
-    if(queuee.includes(channel)){
-        const data=  JSON.parse(message)
+//     if(queuee.includes(channel)){
+//         const data=  JSON.parse(message)
   
-        if(data.success){
-            await redisclient2.set(data.username  , message)
-        }
+//         if(data.success){
+//             await redisclient2.set(data.username  , message)
+//         }
 
-        queuee = queuee.filter(item=> item !== data.username)
-        await redisclient2.set("QueueUser"  , JSON.stringify(queuee))
+//         queuee = queuee.filter(item=> item !== data.username)
+//         await redisclient2.set("QueueUser"  , JSON.stringify(queuee))
 
 
-    }else{
-        if(queeu2.includes(channel)){
-            const data=  JSON.parse(message)
-            console.log(data)
-            if(data.success){
-                await redisclient2.set(data.username  , message)
-                console.log("updated")
+//     }else{
+//         if(queeu2.includes(channel)){
+//             const data=  JSON.parse(message)
+//             console.log(data)
+//             if(data.success){
+//                 await redisclient2.set(data.username  , message)
+//                 console.log("updated")
 
-            }
+//             }
     
-            queeu2 = queeu2.filter(item=> item !== data.username)
-            await redisclient2.set("UpdateUser"  , JSON.stringify(queeu2))
-        }
-    }
-})
+//             queeu2 = queeu2.filter(item=> item !== data.username)
+//             await redisclient2.set("UpdateUser"  , JSON.stringify(queeu2))
+//         }
+//     }
+// })
 
 app.get("/availableProfiles"  , async(req,res)=>{
     let  allusers = await redisclient2.get("AvailableUser")
@@ -285,11 +281,6 @@ app.get("/availableProfiles"  , async(req,res)=>{
 
 
 
-server.listen(PORT , ()=>{
-    
-    // startUpdating() ;    
+server.listen(PORT , ()=>{ 
     console.log(`Server is listening on PORT : ${PORT}`)
-
-
-
 })
