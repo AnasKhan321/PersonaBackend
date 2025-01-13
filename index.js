@@ -45,7 +45,6 @@ io.on("connection"  , (socket)=>{
                 body : JSON.stringify({username : username})  
             })
             const rdata = await res.json() ; 
-            console.log(rdata.data.data)
             io.to(socket.id).emit("userfound"  , JSON.stringify(rdata.data.data))
 
         }
@@ -76,6 +75,7 @@ io.on("connection"  , (socket)=>{
                 content : `${sdata.question}`
             }
         ]
+
         const openai = getOpenAIClient() 
     
         const completion = await openai.chat.completions.create({
@@ -85,25 +85,12 @@ io.on("connection"  , (socket)=>{
             max_tokens: 2044,
           }); 
 
-        io.to(socket.id).emit("send:message"  , JSON.stringify( {image : rrdata.image , message : completion.choices[0].message.content}))
+        // io.to(socket.id).emit("send:message"  , JSON.stringify( {image : rrdata.image , message : completion.choices[0].message.content}))
+        socket.emit("send:message"  , JSON.stringify( {image : rrdata.image , message : completion.choices[0].message.content}))
+
     })
 
-    // redisclient1.on("message"  , async(channel , message)=>{
-    //     const schannel =  await redisclient2.get(socket.id) 
-    //     if(schannel == channel){
-    //         const data=  JSON.parse(message)
-    //         console.log(JSON.parse(message))
-    //         console.log(data.success)
 
-    //         if(data.success ){
-    //             await redisclient2.set(data.username  , message)
-    //             socket.emit("userfound"  , message)
-                
-    //         }else{
-    //             socket.emit("usernotfound"  , JSON.stringify({success : false}))
-    //         }
-    //     }
-    // })
 }) 
 
 
@@ -212,8 +199,6 @@ app.post("/reply"  , async(req,res)=>{
 
                 
             `)
-
-
 
         res.json({success : true , reply :  rdata[0].text   })
 
