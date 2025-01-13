@@ -31,16 +31,27 @@ const io = new Server(server , {
 })
 
 io.on("connection"  , (socket)=>{
+
     socket.on("PersonCreate"  , async(data)=>{
         let username = JSON.parse(data).username
         let rdata =  await redisclient2.get(username)  
         if(rdata !== null){
             socket.emit("userfound"  , rdata)
         }else{
-            let slug = generateSlug() ; 
-            await redisclient1.subscribe(slug)
-            await redisclient2.set(socket.id , slug)
-            await RunewContainer(slug ,username)
+            const res = await fetch(`${process.env.AI_BACKEND}CreateProfile`  , {
+                method : "POST"  , 
+                headers : {
+                    "Content-Type": "application/json",
+                },
+                body : JSON.stringify({username : username})  
+            })
+            const rdata = await res.json() ; 
+            console.log(rdata.data.data)
+            io.to(socket.id).emit("userfound"  , JSON.stringify(rdata.data.data))
+            // let slug = generateSlug() ; 
+            // await redisclient1.subscribe(slug)
+            // await redisclient2.set(socket.id , slug)
+            // await RunewContainer(slug ,username)
         }
 
 
@@ -52,12 +63,18 @@ io.on("connection"  , (socket)=>{
         const ssdata = JSON.parse(rrdata)
         const prompt = getfullPrompt(ssdata  , [])
 
-
         const formattedMessages = [
     
             {
                 role: "system", content: prompt
             }  , 
+            ...(sdata.messages || []).map((msg) => ({
+                role: msg.sender === 'user' ? 'user' : 'assistant',
+                content: msg.content
+              })),
+
+            
+
             {
                 role : "user"  ,
                 content : `${sdata.question}`
