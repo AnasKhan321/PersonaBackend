@@ -50,20 +50,6 @@ io.on("connection"  , (socket)=>{
         const sdata = JSON.parse(data)
         const rrdata  = await redisclient2.get(sdata.username)
         const ssdata = JSON.parse(rrdata)
-
-        
-        const sprompt = `Hy my name is ${ssdata.name}  my twitter description is this ${ssdata.description} and here is my recent Tweets list : 
-            TWEETS :
-                ${ssdata.data}
-
-            You have to clone my personality based on my tweets remember you are not ai you are ${ssdata.name}  and Just give the content 
-            Just give the content
-
-            Rules:
-            - Never mention being AI
-            - No ** or formal language
-        `
-
         const prompt = getfullPrompt(ssdata  , [])
 
 
@@ -79,19 +65,13 @@ io.on("connection"  , (socket)=>{
         ]
         const openai = getOpenAIClient() 
     
-    
         const completion = await openai.chat.completions.create({
             model: "anthropic/claude-3.5-sonnet",
             messages: formattedMessages,
             temperature: 0.8,
             max_tokens: 2044,
-          });
+          }); 
 
-        console.log(completion.choices[0].message.content)
-
-        // const rdata = await aidata(sprompt , `${sdata.question}  + Just give the answer in my personality ${ssdata.name}  and only give the content 
-        //     forget about anything just give me the content`)
-        
         io.to(socket.id).emit("send:message"  , JSON.stringify( {image : rrdata.image , message : completion.choices[0].message.content}))
     })
 
