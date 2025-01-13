@@ -16,6 +16,7 @@
     "express": "^4.21.2",
     "ioredis": "^5.4.2",
     "node-cron": "^3.0.3",
+    "openai": "^4.78.1",
     "random-word-slugs": "^0.1.7",
     "socket.io": "^4.8.1"
   },

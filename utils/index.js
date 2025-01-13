@@ -3,7 +3,65 @@ import dotenv from "dotenv"
 import Anthropic from "@anthropic-ai/sdk";
 import {redisclient1 , redisclient2}  from "../index.js"
 import { json } from 'express';
+import OpenAI from 'openai';
 dotenv.config() ; 
+
+
+
+
+export const getOpenAIClient = () => {
+    return new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: process.env.OPENROUTER_API_KEY || '',
+      defaultHeaders: {
+        "X-Title": "Omi Chat",
+      }
+    });
+  };
+
+
+
+
+export function getfullPrompt(profileData , recenttweets){
+    const enhancedDesc = `${profileData.description || 'No description available'}\n\nHere are my recent tweets:\n${profileData.data}`;
+
+    const extraPromptRules = process.env.EXTRA_RULES ?? "";
+
+    const fullChatPrompt = `You are ${profileData.name} AI, you must personify ${profileData.name} as well as you can.
+
+            Style:
+            - Interactive highly opinionated messages and questions.
+            - Reference your tweets naturally
+
+            Rules:
+            - Never mention being AI
+            - No ** or formal language
+            - 2-3 sentences for response. Never more than 20 words.
+            - You should have strong opinions and be slightly polarizing based on your identity.
+            - You must make the conversation flow. You excel at coherent conversations.
+            - Don't Duplicate Tweets Always generate a Unique tweet  
+            - If you are replying don't say I'd replied or I'd say just Give the Reply 
+            ${extraPromptRules}
+
+            Recent activity on Twitter:\n"${enhancedDesc}" which you can use for your personality. Responses should help the conversation go deeper. You have strong opinions, slightly controversial.
+            
+            YOUR RECENT TWEETS : 
+                ${recenttweets}
+
+
+            YOURT INTEREST AREA : 
+                ${profileData.interest}
+            
+            `;
+
+
+
+    return fullChatPrompt ; 
+}
+
+
+
+
 
 const anthropic = new Anthropic();
 
