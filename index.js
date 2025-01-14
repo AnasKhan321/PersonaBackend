@@ -83,9 +83,8 @@ io.on("connection"  , (socket)=>{
             messages: formattedMessages,
             temperature: 0.8,
             max_tokens: 2044,
-          }); 
+        }); 
 
-        // io.to(socket.id).emit("send:message"  , JSON.stringify( {image : rrdata.image , message : completion.choices[0].message.content}))
         socket.emit("send:message"  , JSON.stringify( {image : rrdata.image , message : completion.choices[0].message.content}))
 
     })
@@ -210,41 +209,7 @@ app.post("/reply"  , async(req,res)=>{
 
 
 
-// redisclient1.on("message"  , async(channel , message)=>{
-//     let q = await redisclient2.get("QueueUser")
-//     let queuee = JSON.parse(q)
-//     console.log(queuee)
 
-//     let q2 = await redisclient2.get("UpdateUser")
-//     let queeu2 = JSON.parse(q2)
-
-
-//     if(queuee.includes(channel)){
-//         const data=  JSON.parse(message)
-  
-//         if(data.success){
-//             await redisclient2.set(data.username  , message)
-//         }
-
-//         queuee = queuee.filter(item=> item !== data.username)
-//         await redisclient2.set("QueueUser"  , JSON.stringify(queuee))
-
-
-//     }else{
-//         if(queeu2.includes(channel)){
-//             const data=  JSON.parse(message)
-//             console.log(data)
-//             if(data.success){
-//                 await redisclient2.set(data.username  , message)
-//                 console.log("updated")
-
-//             }
-    
-//             queeu2 = queeu2.filter(item=> item !== data.username)
-//             await redisclient2.set("UpdateUser"  , JSON.stringify(queeu2))
-//         }
-//     }
-// })
 
 app.get("/availableProfiles"  , async(req,res)=>{
     let  allusers = await redisclient2.get("AvailableUser")
@@ -261,6 +226,47 @@ app.get("/availableProfiles"  , async(req,res)=>{
     res.json({success : true  , data })
 })
 
+
+
+app.post("/saysomething"  , async(req,res)=>{
+    try {
+        const {username} = req.body  ; 
+        const userdata = await redisclient2.get(username)
+
+        const fprompt = getfullPrompt(JSON.parse(userdata)  , [])
+
+
+        const formattedMessages = [
+    
+            {
+                role: "system", content: fprompt
+            }  , 
+
+
+            {
+                role : "user"  ,
+                content : `Someone is here to chat with You Say Something and start conversation`
+            }
+        ]
+
+        const openai = getOpenAIClient() 
+    
+        const completion = await openai.chat.completions.create({
+            model: "anthropic/claude-3.5-sonnet",
+            messages: formattedMessages,
+            temperature: 0.8,
+            max_tokens: 2044,
+        }); 
+        console.log(completion)
+
+        res.json({success : true , data : completion.choices[0].message.content})
+
+
+    } catch (error) {
+        console.log(error)
+        res.json({success : false , message : "Something went wrong"})
+    }
+})
 
 
 
